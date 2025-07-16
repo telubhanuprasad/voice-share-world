@@ -43,13 +43,10 @@ export const useChats = () => {
       return;
     }
 
-    // Listen to messages where current user is sender or receiver
+    // Listen to all messages in the collection and filter client-side
+    // This avoids the need for composite indexes
     const messagesQuery = query(
       collection(db, 'messages'),
-      or(
-        where('senderId', '==', currentUser.uid),
-        where('receiverId', '==', currentUser.uid)
-      ),
       orderBy('timestamp', 'asc')
     );
 
@@ -62,6 +59,11 @@ export const useChats = () => {
           ...doc.data(),
           timestamp: doc.data().timestamp?.toDate() || new Date(),
         } as FirebaseMessage;
+
+        // Only process messages where current user is involved
+        if (message.senderId !== currentUser.uid && message.receiverId !== currentUser.uid) {
+          return;
+        }
 
         // Determine the other participant
         const otherUserId = message.senderId === currentUser.uid 
