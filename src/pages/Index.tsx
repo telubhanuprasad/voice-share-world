@@ -15,20 +15,9 @@ const Index = () => {
   const { chats, loading: chatsLoading, sendMessage } = useChats();
   const { users } = useUsers();
 
-  if (loading) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-whatsapp-bg">
-        <div className="text-foreground">Loading...</div>
-      </div>
-    );
-  }
+  if (loading) return <div>Loading...</div>;
+  if (!currentUser) return <Login />;
 
-  if (!currentUser) {
-    return <Login />;
-  }
-
-  // Convert Firebase chat data to Chat format for the selected user
-  // Allow starting new chats even if no existing conversation
   const selectedChat = selectedContactId ? {
     id: selectedContactId,
     contact: {
@@ -47,7 +36,7 @@ const Index = () => {
       isOnline: users.find(u => u.uid === selectedContactId)?.isOnline || false,
     },
     messages: chats[selectedContactId]?.messages?.map(msg => {
-      const messageDate = msg.timestamp; // Already a Date object
+      const messageDate = msg.timestamp; // Already a Date
       const now = new Date();
       const isToday = messageDate.toDateString() === now.toDateString();
       
@@ -56,12 +45,7 @@ const Index = () => {
         text: msg.text,
         timestamp: isToday ? 
           messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) :
-          messageDate.toLocaleString([], { 
-            month: 'short', 
-            day: 'numeric', 
-            hour: '2-digit', 
-            minute: '2-digit' 
-          }),
+          messageDate.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
         isSent: msg.senderId === currentUser?.uid,
         status: msg.status,
       };
@@ -69,25 +53,11 @@ const Index = () => {
   } : null;
 
   const handleSendMessage = async (chatId: string, text: string) => {
-    try {
-      console.log('Sending message to:', chatId, 'Message:', text);
-      await sendMessage(chatId, text);
-    } catch (error) {
-      console.error('Failed to send message:', error);
-    }
+    await sendMessage(chatId, text);
   };
-
-  // Debug logging
-  console.log('Selected contact ID:', selectedContactId);
-  console.log('Chats data:', chats);
-  console.log('Users data:', users);
-  console.log('Selected chat:', selectedChat);
-  console.log('Selected chat messages:', selectedChat?.messages);
-  console.log('Messages array length:', selectedChat?.messages?.length || 0);
 
   return (
     <div className="h-screen flex bg-whatsapp-bg">
-      {/* Sidebar - Chat List */}
       <div className="w-80 lg:w-96">
         {showProfile ? (
           <UserProfile onBack={() => setShowProfile(false)} />
@@ -100,8 +70,6 @@ const Index = () => {
           />
         )}
       </div>
-
-      {/* Main Chat Window */}
       <ChatWindow
         chat={selectedChat}
         onSendMessage={handleSendMessage}
