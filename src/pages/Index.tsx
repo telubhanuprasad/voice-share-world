@@ -52,6 +52,13 @@ const Index = () => {
     }) || [],
   } : null;
 
+  // Debug logging
+  console.log('🔍 Debug - Selected contact ID:', selectedContactId);
+  console.log('🔍 Debug - Chat data for selected contact:', chats[selectedContactId || '']);
+  console.log('🔍 Debug - Raw messages:', chats[selectedContactId || '']?.messages);
+  console.log('🔍 Debug - Processed selectedChat:', selectedChat);
+  console.log('🔍 Debug - Final messages array:', selectedChat?.messages);
+
   const handleSendMessage = async (chatId: string, text: string) => {
     await sendMessage(chatId, text);
   };
