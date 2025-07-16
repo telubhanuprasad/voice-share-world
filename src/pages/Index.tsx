@@ -28,33 +28,41 @@ const Index = () => {
   }
 
   // Convert Firebase chat data to Chat format for the selected user
-  const selectedChat = selectedContactId && chats[selectedContactId] ? {
+  // Allow starting new chats even if no existing conversation
+  const selectedChat = selectedContactId ? {
     id: selectedContactId,
     contact: {
       id: selectedContactId,
       name: users.find(u => u.uid === selectedContactId)?.displayName || 'Unknown User',
       avatar: users.find(u => u.uid === selectedContactId)?.photoURL || '',
-      lastMessage: chats[selectedContactId].lastMessage,
-      lastMessageTime: chats[selectedContactId].lastMessageTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      unreadCount: chats[selectedContactId].unreadCount,
+      lastMessage: chats[selectedContactId]?.lastMessage || '',
+      lastMessageTime: chats[selectedContactId]?.lastMessageTime?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || '',
+      unreadCount: chats[selectedContactId]?.unreadCount || 0,
       isOnline: users.find(u => u.uid === selectedContactId)?.isOnline || false,
     },
-    messages: chats[selectedContactId].messages.map(msg => ({
+    messages: chats[selectedContactId]?.messages?.map(msg => ({
       id: msg.id,
       text: msg.text,
       timestamp: msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       isSent: msg.senderId === currentUser?.uid,
       status: msg.status,
-    })),
+    })) || [],
   } : null;
 
   const handleSendMessage = async (chatId: string, text: string) => {
     try {
+      console.log('Sending message to:', chatId, 'Message:', text);
       await sendMessage(chatId, text);
     } catch (error) {
       console.error('Failed to send message:', error);
     }
   };
+
+  // Debug logging
+  console.log('Selected contact ID:', selectedContactId);
+  console.log('Chats data:', chats);
+  console.log('Users data:', users);
+  console.log('Selected chat:', selectedChat);
 
   return (
     <div className="h-screen flex bg-whatsapp-bg">
