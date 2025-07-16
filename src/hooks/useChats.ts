@@ -37,6 +37,7 @@ export const useChats = () => {
   const { currentUser } = useAuth();
 
   useEffect(() => {
+    console.log('useChats: Current user changed:', currentUser?.uid);
     if (!currentUser) {
       setChats({});
       setLoading(false);
@@ -97,12 +98,15 @@ export const useChats = () => {
     };
 
     const processSentMessages = (snapshot: any) => {
+      console.log('useChats: Received sent messages snapshot, size:', snapshot.size);
       snapshot.forEach((doc: any) => {
         const message = {
           id: doc.id,
           ...doc.data(),
           timestamp: doc.data().timestamp?.toDate() || new Date(),
         } as FirebaseMessage;
+        
+        console.log('useChats: Processing sent message:', message);
         
         const existingIndex = allMessages.findIndex(m => m.id === message.id);
         if (existingIndex >= 0) {
@@ -111,16 +115,20 @@ export const useChats = () => {
           allMessages.push(message);
         }
       });
+      console.log('useChats: All messages after processing sent:', allMessages.length);
       updateChatsFromMessages();
     };
 
     const processReceivedMessages = (snapshot: any) => {
+      console.log('useChats: Received received messages snapshot, size:', snapshot.size);
       snapshot.forEach((doc: any) => {
         const message = {
           id: doc.id,
           ...doc.data(),
           timestamp: doc.data().timestamp?.toDate() || new Date(),
         } as FirebaseMessage;
+        
+        console.log('useChats: Processing received message:', message);
         
         const existingIndex = allMessages.findIndex(m => m.id === message.id);
         if (existingIndex >= 0) {
@@ -129,6 +137,7 @@ export const useChats = () => {
           allMessages.push(message);
         }
       });
+      console.log('useChats: All messages after processing received:', allMessages.length);
       updateChatsFromMessages();
     };
 
@@ -146,10 +155,24 @@ export const useChats = () => {
     );
 
     // Listen to sent messages
-    const unsubscribeSent = onSnapshot(sentMessagesQuery, processSentMessages);
+    const unsubscribeSent = onSnapshot(
+      sentMessagesQuery, 
+      processSentMessages,
+      (error) => {
+        console.error('useChats: Error in sent messages query:', error);
+        setLoading(false);
+      }
+    );
 
     // Listen to received messages  
-    const unsubscribeReceived = onSnapshot(receivedMessagesQuery, processReceivedMessages);
+    const unsubscribeReceived = onSnapshot(
+      receivedMessagesQuery, 
+      processReceivedMessages,
+      (error) => {
+        console.error('useChats: Error in received messages query:', error);
+        setLoading(false);
+      }
+    );
 
     return () => {
       unsubscribeSent();
