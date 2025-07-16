@@ -44,139 +44,88 @@ export const useChats = () => {
       return;
     }
 
-    let allMessages: FirebaseMessage[] = [];
-    
-    const updateChatsFromMessages = () => {
-      const chatsData: { [key: string]: ChatData } = {};
-
-      allMessages.forEach((message) => {
-        // Only process messages where current user is involved
-        if (message.senderId !== currentUser.uid && message.receiverId !== currentUser.uid) {
-          return;
-        }
-
-        // Determine the other participant
-        const otherUserId = message.senderId === currentUser.uid 
-          ? message.receiverId 
-          : message.senderId;
-
-        if (!chatsData[otherUserId]) {
-          chatsData[otherUserId] = {
-            id: otherUserId,
-            participants: [currentUser.uid, otherUserId],
-            messages: [],
-            lastMessage: '',
-            lastMessageTime: new Date(0),
-            unreadCount: 0,
-          };
-        }
-
-        chatsData[otherUserId].messages.push(message);
-      });
-
-      // Sort messages by timestamp for each chat and update chat metadata
-      Object.keys(chatsData).forEach(userId => {
-        const chat = chatsData[userId];
-        // Sort messages chronologically
-        chat.messages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-        
-        // Update last message info from the most recent message
-        if (chat.messages.length > 0) {
-          const lastMessage = chat.messages[chat.messages.length - 1];
-          chat.lastMessage = lastMessage.text;
-          chat.lastMessageTime = lastMessage.timestamp;
-        }
-
-        // Count unread messages (messages sent by other user that are not read)
-        chat.unreadCount = chat.messages.filter(
-          msg => msg.senderId !== currentUser.uid && msg.status !== 'read'
-        ).length;
-      });
-
-      setChats(chatsData);
-      setLoading(false);
-    };
-
-    const processSentMessages = (snapshot: any) => {
-      console.log('useChats: Received sent messages snapshot, size:', snapshot.size);
-      snapshot.forEach((doc: any) => {
-        const message = {
-          id: doc.id,
-          ...doc.data(),
-          timestamp: doc.data().timestamp?.toDate() || new Date(),
-        } as FirebaseMessage;
-        
-        console.log('useChats: Processing sent message:', message);
-        
-        const existingIndex = allMessages.findIndex(m => m.id === message.id);
-        if (existingIndex >= 0) {
-          allMessages[existingIndex] = message;
-        } else {
-          allMessages.push(message);
-        }
-      });
-      console.log('useChats: All messages after processing sent:', allMessages.length);
-      updateChatsFromMessages();
-    };
-
-    const processReceivedMessages = (snapshot: any) => {
-      console.log('useChats: Received received messages snapshot, size:', snapshot.size);
-      snapshot.forEach((doc: any) => {
-        const message = {
-          id: doc.id,
-          ...doc.data(),
-          timestamp: doc.data().timestamp?.toDate() || new Date(),
-        } as FirebaseMessage;
-        
-        console.log('useChats: Processing received message:', message);
-        
-        const existingIndex = allMessages.findIndex(m => m.id === message.id);
-        if (existingIndex >= 0) {
-          allMessages[existingIndex] = message;
-        } else {
-          allMessages.push(message);
-        }
-      });
-      console.log('useChats: All messages after processing received:', allMessages.length);
-      updateChatsFromMessages();
-    };
-
-    // Use two separate queries to avoid composite index requirements
-    const sentMessagesQuery = query(
+    // Use a single query to get all messages and filter client-side
+    // This is simpler and avoids issues with multiple queries
+    const messagesQuery = query(
       collection(db, 'messages'),
-      where('senderId', '==', currentUser.uid),
-      orderBy('timestamp', 'asc')
-    );
-    
-    const receivedMessagesQuery = query(
-      collection(db, 'messages'),
-      where('receiverId', '==', currentUser.uid),
       orderBy('timestamp', 'asc')
     );
 
-    // Listen to sent messages
-    const unsubscribeSent = onSnapshot(
-      sentMessagesQuery, 
-      processSentMessages,
-      (error) => {
-        console.error('useChats: Error in sent messages query:', error);
+    const unsubscribe = onSnapshot(
+      messagesQuery, 
+      (snapshot) => {
+        console.log('useChats: Received messages snapshot, total size:', snapshot.size);
+        const chatsData: { [key: string]: ChatData } = {};
+
+        snapshot.forEach((doc) => {
+          const message = {
+            id: doc.id,
+            ...doc.data(),
+            timestamp: doc.data().timestamp?.toDate() || new Date(),
+          } as FirebaseMessage;
+
+          console.log('useChats: Processing message:', message);
+
+          // Only process messages where current user is involved
+          if (message.senderId !== currentUser.uid && message.receiverId !== currentUser.uid) {
+            return;
+          }
+
+          console.log('useChats: Message involves current user, processing...');
+
+          // Determine the other participant
+          const otherUserId = message.senderId === currentUser.uid 
+            ? message.receiverId 
+            : message.senderId;
+
+          if (!chatsData[otherUserId]) {
+            chatsData[otherUserId] = {
+              id: otherUserId,
+              participants: [currentUser.uid, otherUserId],
+              messages: [],
+              lastMessage: '',
+              lastMessageTime: new Date(0),
+              unreadCount: 0,
+            };
+          }
+
+          chatsData[otherUserId].messages.push(message);
+        });
+
+        // Sort messages by timestamp for each chat and update chat metadata
+        Object.keys(chatsData).forEach(userId => {
+          const chat = chatsData[userId];
+          console.log(`useChats: Processing chat for user ${userId}, message count:`, chat.messages.length);
+          
+          // Sort messages chronologically
+          chat.messages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+          
+          // Update last message info from the most recent message
+          if (chat.messages.length > 0) {
+            const lastMessage = chat.messages[chat.messages.length - 1];
+            chat.lastMessage = lastMessage.text;
+            chat.lastMessageTime = lastMessage.timestamp;
+          }
+
+          // Count unread messages (messages sent by other user that are not read)
+          chat.unreadCount = chat.messages.filter(
+            msg => msg.senderId !== currentUser.uid && msg.status !== 'read'
+          ).length;
+        });
+
+        console.log('useChats: Final chats data:', chatsData);
+        setChats(chatsData);
         setLoading(false);
-      }
-    );
-
-    // Listen to received messages  
-    const unsubscribeReceived = onSnapshot(
-      receivedMessagesQuery, 
-      processReceivedMessages,
+      },
       (error) => {
-        console.error('useChats: Error in received messages query:', error);
+        console.error('useChats: Error in messages query:', error);
         setLoading(false);
       }
     );
 
     return () => {
-      unsubscribeSent();
-      unsubscribeReceived();
+      console.log('useChats: Cleaning up message listener');
+      unsubscribe();
     };
   }, [currentUser]);
 
