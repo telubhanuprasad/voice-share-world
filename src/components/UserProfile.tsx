@@ -4,19 +4,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import sarahAvatar from '@/assets/avatar-sarah.jpg';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface UserProfileProps {
   onBack: () => void;
 }
 
 export function UserProfile({ onBack }: UserProfileProps) {
+  const { currentUser } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [userInfo, setUserInfo] = useState({
-    name: 'Sarah Johnson',
+    name: currentUser?.displayName || 'Anonymous',
     about: 'Hey there! I am using WhatsApp.',
-    phone: '+1 (555) 123-4567',
-    avatar: sarahAvatar
+    phone: currentUser?.email || '',
+    avatar: currentUser?.photoURL || ''
   });
   
   const [editedInfo, setEditedInfo] = useState(userInfo);
@@ -84,7 +85,7 @@ export function UserProfile({ onBack }: UserProfileProps) {
         <div className="relative bg-whatsapp-header p-8 flex flex-col items-center border-b border-border">
           <div className="relative group">
             <img
-              src={userInfo.avatar}
+              src={userInfo.avatar || '/placeholder.svg'}
               alt="Profile"
               className="w-32 h-32 rounded-full object-cover"
             />

@@ -8,6 +8,15 @@ export interface Contact {
   isOnline: boolean;
 }
 
+export interface FirebaseContact {
+  uid: string;
+  displayName: string;
+  photoURL: string;
+  email: string;
+  isOnline: boolean;
+  lastSeen: Date;
+}
+
 export interface Message {
   id: string;
   text: string;

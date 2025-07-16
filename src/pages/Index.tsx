@@ -2,13 +2,27 @@ import { useState } from 'react';
 import { ChatList } from '@/components/ChatList';
 import { ChatWindow } from '@/components/ChatWindow';
 import { UserProfile } from '@/components/UserProfile';
-import { contacts, mockChats } from '@/data/mockData';
 import { Chat } from '@/types/chat';
+import { useAuth } from '@/contexts/AuthContext';
+import { Login } from '@/components/Login';
 
 const Index = () => {
+  const { currentUser, loading } = useAuth();
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
-  const [chats, setChats] = useState<{ [key: string]: Chat }>(mockChats);
+  const [chats, setChats] = useState<{ [key: string]: Chat }>({});
   const [showProfile, setShowProfile] = useState(false);
+
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-whatsapp-bg">
+        <div className="text-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return <Login />;
+  }
 
   const selectedChat = selectedContactId ? chats[selectedContactId] : null;
 
@@ -63,7 +77,6 @@ const Index = () => {
           <UserProfile onBack={() => setShowProfile(false)} />
         ) : (
           <ChatList
-            contacts={contacts}
             selectedContactId={selectedContactId}
             onContactSelect={setSelectedContactId}
             onProfileClick={() => setShowProfile(true)}
