@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { ChatList } from '@/components/ChatList';
 import { ChatWindow } from '@/components/ChatWindow';
+import { UserProfile } from '@/components/UserProfile';
 import { contacts, mockChats } from '@/data/mockData';
 import { Chat } from '@/types/chat';
 
 const Index = () => {
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
   const [chats, setChats] = useState<{ [key: string]: Chat }>(mockChats);
+  const [showProfile, setShowProfile] = useState(false);
 
   const selectedChat = selectedContactId ? chats[selectedContactId] : null;
 
@@ -57,11 +59,16 @@ const Index = () => {
     <div className="h-screen flex bg-whatsapp-bg">
       {/* Sidebar - Chat List */}
       <div className="w-80 lg:w-96">
-        <ChatList
-          contacts={contacts}
-          selectedContactId={selectedContactId}
-          onContactSelect={setSelectedContactId}
-        />
+        {showProfile ? (
+          <UserProfile onBack={() => setShowProfile(false)} />
+        ) : (
+          <ChatList
+            contacts={contacts}
+            selectedContactId={selectedContactId}
+            onContactSelect={setSelectedContactId}
+            onProfileClick={() => setShowProfile(true)}
+          />
+        )}
       </div>
 
       {/* Main Chat Window */}

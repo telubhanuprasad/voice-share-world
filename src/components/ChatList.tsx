@@ -1,4 +1,4 @@
-import { Search, MessageCircle } from 'lucide-react';
+import { Search, MessageCircle, User } from 'lucide-react';
 import { Contact } from '@/types/chat';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,18 +7,29 @@ interface ChatListProps {
   contacts: Contact[];
   selectedContactId: string | null;
   onContactSelect: (contactId: string) => void;
+  onProfileClick: () => void;
 }
 
-export function ChatList({ contacts, selectedContactId, onContactSelect }: ChatListProps) {
+export function ChatList({ contacts, selectedContactId, onContactSelect, onProfileClick }: ChatListProps) {
   return (
     <div className="flex flex-col h-full bg-whatsapp-panel border-r border-border">
       {/* Header */}
       <div className="bg-whatsapp-header p-4 border-b border-border">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold text-foreground">WhatsApp</h1>
-          <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-foreground">
-            <MessageCircle className="h-5 w-5" />
-          </Button>
+          <div className="flex space-x-2">
+            <Button 
+              size="sm" 
+              variant="ghost" 
+              onClick={onProfileClick}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <User className="h-5 w-5" />
+            </Button>
+            <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-foreground">
+              <MessageCircle className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
       </div>
 
