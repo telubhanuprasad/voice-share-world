@@ -80,17 +80,25 @@ export const useChats = () => {
         }
 
         chatsData[otherUserId].messages.push(message);
+      });
+
+      // Sort messages by timestamp for each chat and update chat metadata
+      Object.keys(chatsData).forEach(userId => {
+        const chat = chatsData[userId];
+        // Sort messages chronologically
+        chat.messages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
         
-        // Update last message info
-        if (message.timestamp > chatsData[otherUserId].lastMessageTime) {
-          chatsData[otherUserId].lastMessage = message.text;
-          chatsData[otherUserId].lastMessageTime = message.timestamp;
+        // Update last message info from the most recent message
+        if (chat.messages.length > 0) {
+          const lastMessage = chat.messages[chat.messages.length - 1];
+          chat.lastMessage = lastMessage.text;
+          chat.lastMessageTime = lastMessage.timestamp;
         }
 
-        // Count unread messages (messages sent by other user)
-        if (message.senderId !== currentUser.uid && message.status !== 'read') {
-          chatsData[otherUserId].unreadCount++;
-        }
+        // Count unread messages (messages sent by other user that are not read)
+        chat.unreadCount = chat.messages.filter(
+          msg => msg.senderId !== currentUser.uid && msg.status !== 'read'
+        ).length;
       });
 
       setChats(chatsData);
