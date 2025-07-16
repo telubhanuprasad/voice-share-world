@@ -48,7 +48,7 @@ export const useChats = () => {
     // This is simpler and avoids issues with multiple queries
     const messagesQuery = query(
       collection(db, 'messages'),
-      orderBy('timestamp', 'asc')
+      orderBy('timestamp', 'desc')
     );
 
     const unsubscribe = onSnapshot(
