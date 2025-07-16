@@ -16,12 +16,10 @@ export const useUsers = () => {
       return;
     }
 
-    // Query all users except the current user
+    // Query all users except the current user (simplified query)
     const usersQuery = query(
       collection(db, 'users'),
-      where('uid', '!=', currentUser.uid),
-      orderBy('uid'),
-      orderBy('displayName')
+      where('uid', '!=', currentUser.uid)
     );
 
     const unsubscribe = onSnapshot(usersQuery, (snapshot) => {
