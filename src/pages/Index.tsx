@@ -5,12 +5,15 @@ import { UserProfile } from '@/components/UserProfile';
 import { Chat } from '@/types/chat';
 import { useAuth } from '@/contexts/AuthContext';
 import { Login } from '@/components/Login';
+import { useChats } from '@/hooks/useChats';
+import { useUsers } from '@/hooks/useUsers';
 
 const Index = () => {
   const { currentUser, loading } = useAuth();
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
-  const [chats, setChats] = useState<{ [key: string]: Chat }>({});
   const [showProfile, setShowProfile] = useState(false);
+  const { chats, loading: chatsLoading, sendMessage } = useChats();
+  const { users } = useUsers();
 
   if (loading) {
     return (
@@ -24,49 +27,33 @@ const Index = () => {
     return <Login />;
   }
 
-  const selectedChat = selectedContactId ? chats[selectedContactId] : null;
+  // Convert Firebase chat data to Chat format for the selected user
+  const selectedChat = selectedContactId && chats[selectedContactId] ? {
+    id: selectedContactId,
+    contact: {
+      id: selectedContactId,
+      name: users.find(u => u.uid === selectedContactId)?.displayName || 'Unknown User',
+      avatar: users.find(u => u.uid === selectedContactId)?.photoURL || '',
+      lastMessage: chats[selectedContactId].lastMessage,
+      lastMessageTime: chats[selectedContactId].lastMessageTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      unreadCount: chats[selectedContactId].unreadCount,
+      isOnline: users.find(u => u.uid === selectedContactId)?.isOnline || false,
+    },
+    messages: chats[selectedContactId].messages.map(msg => ({
+      id: msg.id,
+      text: msg.text,
+      timestamp: msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isSent: msg.senderId === currentUser?.uid,
+      status: msg.status,
+    })),
+  } : null;
 
-  const handleSendMessage = (chatId: string, text: string) => {
-    const newMessage = {
-      id: Date.now().toString(),
-      text,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      isSent: true,
-      status: 'sent' as const,
-    };
-
-    setChats(prev => ({
-      ...prev,
-      [chatId]: {
-        ...prev[chatId],
-        messages: [...prev[chatId].messages, newMessage],
-      },
-    }));
-
-    // Simulate message status updates
-    setTimeout(() => {
-      setChats(prev => ({
-        ...prev,
-        [chatId]: {
-          ...prev[chatId],
-          messages: prev[chatId].messages.map(msg =>
-            msg.id === newMessage.id ? { ...msg, status: 'delivered' } : msg
-          ),
-        },
-      }));
-    }, 1000);
-
-    setTimeout(() => {
-      setChats(prev => ({
-        ...prev,
-        [chatId]: {
-          ...prev[chatId],
-          messages: prev[chatId].messages.map(msg =>
-            msg.id === newMessage.id ? { ...msg, status: 'read' } : msg
-          ),
-        },
-      }));
-    }, 2000);
+  const handleSendMessage = async (chatId: string, text: string) => {
+    try {
+      await sendMessage(chatId, text);
+    } catch (error) {
+      console.error('Failed to send message:', error);
+    }
   };
 
   return (
@@ -80,6 +67,7 @@ const Index = () => {
             selectedContactId={selectedContactId}
             onContactSelect={setSelectedContactId}
             onProfileClick={() => setShowProfile(true)}
+            chats={chats}
           />
         )}
       </div>

@@ -5,14 +5,16 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Contact, FirebaseContact } from '@/types/chat';
 import { useUsers } from '@/hooks/useUsers';
 import { useAuth } from '@/contexts/AuthContext';
+import { ChatData } from '@/hooks/useChats';
 
 interface ChatListProps {
   selectedContactId: string | null;
   onContactSelect: (contactId: string) => void;
   onProfileClick: () => void;
+  chats: { [key: string]: ChatData };
 }
 
-export const ChatList = ({ selectedContactId, onContactSelect, onProfileClick }: ChatListProps) => {
+export const ChatList = ({ selectedContactId, onContactSelect, onProfileClick, chats }: ChatListProps) => {
   const { users, loading } = useUsers();
   const { logout } = useAuth();
 
@@ -24,16 +26,29 @@ export const ChatList = ({ selectedContactId, onContactSelect, onProfileClick }:
     }
   };
 
-  // Convert Firebase users to Contact format
-  const contacts: Contact[] = users.map(user => ({
-    id: user.uid,
-    name: user.displayName,
-    avatar: user.photoURL,
-    lastMessage: "Start a conversation",
-    lastMessageTime: "",
-    unreadCount: 0,
-    isOnline: user.isOnline,
-  }));
+  // Convert Firebase users to Contact format, prioritizing those with existing chats
+  const contacts: Contact[] = users.map(user => {
+    const chat = chats[user.uid];
+    return {
+      id: user.uid,
+      name: user.displayName,
+      avatar: user.photoURL,
+      lastMessage: chat?.lastMessage || "Start a conversation",
+      lastMessageTime: chat?.lastMessageTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || "",
+      unreadCount: chat?.unreadCount || 0,
+      isOnline: user.isOnline,
+    };
+  }).sort((a, b) => {
+    // Sort users with existing chats first
+    const aHasChat = chats[a.id] ? 1 : 0;
+    const bHasChat = chats[b.id] ? 1 : 0;
+    if (aHasChat !== bHasChat) return bHasChat - aHasChat;
+    
+    // Then sort by last message time
+    const aTime = chats[a.id]?.lastMessageTime.getTime() || 0;
+    const bTime = chats[b.id]?.lastMessageTime.getTime() || 0;
+    return bTime - aTime;
+  });
 
   return (
     <div className="flex flex-col h-full bg-whatsapp-panel border-r border-border">
