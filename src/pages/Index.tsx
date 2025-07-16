@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Login } from '@/components/Login';
 import { useChats } from '@/hooks/useChats';
 import { useUsers } from '@/hooks/useUsers';
+import ChatPage from './ChatPage';
 
 const Index = () => {
   const { currentUser, loading } = useAuth();
@@ -85,29 +86,8 @@ const Index = () => {
   console.log('Selected chat messages:', selectedChat?.messages);
   console.log('Messages array length:', selectedChat?.messages?.length || 0);
 
-  return (
-    <div className="h-screen flex bg-whatsapp-bg">
-      {/* Sidebar - Chat List */}
-      <div className="w-80 lg:w-96">
-        {showProfile ? (
-          <UserProfile onBack={() => setShowProfile(false)} />
-        ) : (
-          <ChatList
-            selectedContactId={selectedContactId}
-            onContactSelect={setSelectedContactId}
-            onProfileClick={() => setShowProfile(true)}
-            chats={chats}
-          />
-        )}
-      </div>
-
-      {/* Main Chat Window */}
-      <ChatWindow
-        chat={selectedChat}
-        onSendMessage={handleSendMessage}
-      />
-    </div>
-  );
+  // Use ChatPage for debugging
+  return <ChatPage />;
 };
 
 export default Index;
