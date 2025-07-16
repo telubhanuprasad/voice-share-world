@@ -36,17 +36,36 @@ const Index = () => {
       name: users.find(u => u.uid === selectedContactId)?.displayName || 'Unknown User',
       avatar: users.find(u => u.uid === selectedContactId)?.photoURL || '',
       lastMessage: chats[selectedContactId]?.lastMessage || '',
-      lastMessageTime: chats[selectedContactId]?.lastMessageTime?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || '',
+      lastMessageTime: chats[selectedContactId]?.lastMessageTime ? 
+        new Date(chats[selectedContactId].lastMessageTime).toLocaleString([], { 
+          month: 'short', 
+          day: 'numeric', 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        }) : '',
       unreadCount: chats[selectedContactId]?.unreadCount || 0,
       isOnline: users.find(u => u.uid === selectedContactId)?.isOnline || false,
     },
-    messages: chats[selectedContactId]?.messages?.map(msg => ({
-      id: msg.id,
-      text: msg.text,
-      timestamp: msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      isSent: msg.senderId === currentUser?.uid,
-      status: msg.status,
-    })) || [],
+    messages: chats[selectedContactId]?.messages?.map(msg => {
+      const messageDate = new Date(msg.timestamp);
+      const now = new Date();
+      const isToday = messageDate.toDateString() === now.toDateString();
+      
+      return {
+        id: msg.id,
+        text: msg.text,
+        timestamp: isToday ? 
+          messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) :
+          messageDate.toLocaleString([], { 
+            month: 'short', 
+            day: 'numeric', 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          }),
+        isSent: msg.senderId === currentUser?.uid,
+        status: msg.status,
+      };
+    }) || [],
   } : null;
 
   const handleSendMessage = async (chatId: string, text: string) => {
