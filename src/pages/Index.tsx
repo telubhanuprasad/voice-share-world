@@ -82,6 +82,8 @@ const Index = () => {
   console.log('Chats data:', chats);
   console.log('Users data:', users);
   console.log('Selected chat:', selectedChat);
+  console.log('Selected chat messages:', selectedChat?.messages);
+  console.log('Messages array length:', selectedChat?.messages?.length || 0);
 
   return (
     <div className="h-screen flex bg-whatsapp-bg">
