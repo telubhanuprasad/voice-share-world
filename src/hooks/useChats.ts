@@ -43,23 +43,12 @@ export const useChats = () => {
       return;
     }
 
-    // Listen to all messages in the collection and filter client-side
-    // This avoids the need for composite indexes
-    const messagesQuery = query(
-      collection(db, 'messages'),
-      orderBy('timestamp', 'asc')
-    );
-
-    const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
+    let allMessages: FirebaseMessage[] = [];
+    
+    const updateChatsFromMessages = () => {
       const chatsData: { [key: string]: ChatData } = {};
 
-      snapshot.forEach((doc) => {
-        const message = {
-          id: doc.id,
-          ...doc.data(),
-          timestamp: doc.data().timestamp?.toDate() || new Date(),
-        } as FirebaseMessage;
-
+      allMessages.forEach((message) => {
         // Only process messages where current user is involved
         if (message.senderId !== currentUser.uid && message.receiverId !== currentUser.uid) {
           return;
@@ -105,9 +94,67 @@ export const useChats = () => {
 
       setChats(chatsData);
       setLoading(false);
-    });
+    };
 
-    return () => unsubscribe();
+    const processSentMessages = (snapshot: any) => {
+      snapshot.forEach((doc: any) => {
+        const message = {
+          id: doc.id,
+          ...doc.data(),
+          timestamp: doc.data().timestamp?.toDate() || new Date(),
+        } as FirebaseMessage;
+        
+        const existingIndex = allMessages.findIndex(m => m.id === message.id);
+        if (existingIndex >= 0) {
+          allMessages[existingIndex] = message;
+        } else {
+          allMessages.push(message);
+        }
+      });
+      updateChatsFromMessages();
+    };
+
+    const processReceivedMessages = (snapshot: any) => {
+      snapshot.forEach((doc: any) => {
+        const message = {
+          id: doc.id,
+          ...doc.data(),
+          timestamp: doc.data().timestamp?.toDate() || new Date(),
+        } as FirebaseMessage;
+        
+        const existingIndex = allMessages.findIndex(m => m.id === message.id);
+        if (existingIndex >= 0) {
+          allMessages[existingIndex] = message;
+        } else {
+          allMessages.push(message);
+        }
+      });
+      updateChatsFromMessages();
+    };
+
+    // Use two separate queries to avoid composite index requirements
+    const sentMessagesQuery = query(
+      collection(db, 'messages'),
+      where('senderId', '==', currentUser.uid),
+      orderBy('timestamp', 'asc')
+    );
+    
+    const receivedMessagesQuery = query(
+      collection(db, 'messages'),
+      where('receiverId', '==', currentUser.uid),
+      orderBy('timestamp', 'asc')
+    );
+
+    // Listen to sent messages
+    const unsubscribeSent = onSnapshot(sentMessagesQuery, processSentMessages);
+
+    // Listen to received messages  
+    const unsubscribeReceived = onSnapshot(receivedMessagesQuery, processReceivedMessages);
+
+    return () => {
+      unsubscribeSent();
+      unsubscribeReceived();
+    };
   }, [currentUser]);
 
   const sendMessage = async (receiverId: string, text: string) => {
