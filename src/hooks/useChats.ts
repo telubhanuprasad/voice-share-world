@@ -55,19 +55,27 @@ export const useChats = () => {
       messagesQuery, 
       (snapshot) => {
         console.log('useChats: Received messages snapshot, total size:', snapshot.size);
+        console.log('useChats: Current user UID:', currentUser.uid);
         const chatsData: { [key: string]: ChatData } = {};
 
         snapshot.forEach((doc) => {
+          const data = doc.data();
+          console.log('useChats: Raw document data:', data);
+          
           const message = {
             id: doc.id,
-            ...doc.data(),
-            timestamp: doc.data().timestamp?.toDate() || new Date(),
+            text: data.text || '',
+            senderId: data.senderId || '',
+            receiverId: data.receiverId || '',
+            timestamp: data.timestamp?.toDate() || new Date(),
+            status: data.status || 'sent',
           } as FirebaseMessage;
 
-          console.log('useChats: Processing message:', message);
+          console.log('useChats: Processed message:', message);
 
           // Only process messages where current user is involved
           if (message.senderId !== currentUser.uid && message.receiverId !== currentUser.uid) {
+            console.log('useChats: Message does not involve current user, skipping');
             return;
           }
 
@@ -77,6 +85,8 @@ export const useChats = () => {
           const otherUserId = message.senderId === currentUser.uid 
             ? message.receiverId 
             : message.senderId;
+
+          console.log('useChats: Other user ID:', otherUserId);
 
           if (!chatsData[otherUserId]) {
             chatsData[otherUserId] = {
