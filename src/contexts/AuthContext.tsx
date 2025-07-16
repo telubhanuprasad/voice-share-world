@@ -72,11 +72,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (user) {
         setCurrentUser(user as AuthUser);
         
-        // Update user online status
-        await updateDoc(doc(db, 'users', user.uid), {
-          isOnline: true,
-          lastSeen: serverTimestamp(),
-        });
+        // Create or update user document with online status
+        try {
+          await setDoc(doc(db, 'users', user.uid), {
+            uid: user.uid,
+            displayName: user.displayName || 'Anonymous',
+            email: user.email || '',
+            photoURL: user.photoURL || '',
+            isOnline: true,
+            lastSeen: serverTimestamp(),
+            createdAt: serverTimestamp(),
+          }, { merge: true });
+        } catch (error) {
+          console.error('Error updating user status:', error);
+        }
       } else {
         setCurrentUser(null);
       }
