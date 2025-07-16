@@ -47,7 +47,7 @@ const Index = () => {
       isOnline: users.find(u => u.uid === selectedContactId)?.isOnline || false,
     },
     messages: chats[selectedContactId]?.messages?.map(msg => {
-      const messageDate = new Date(msg.timestamp);
+      const messageDate = msg.timestamp; // Already a Date object
       const now = new Date();
       const isToday = messageDate.toDateString() === now.toDateString();
       
